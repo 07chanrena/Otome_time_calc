@@ -84,13 +84,22 @@
   <div class="output" id="result"></div>
 
   <script>
+
     // 現在時刻を退店希望時刻にセットする
-    function setDefaultExitTime() {
-      const now = new Date();
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
-      document.getElementById('exitTime').value = `${hours}:${minutes}`;
-    }
+function setDefaultExitTime() {
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+
+  // 深夜0〜4時などを25時〜29時に変換（必要に応じて範囲調整可能）
+  const useLateNightFormat = (hours >= 0 && hours < 5);
+  if (useLateNightFormat) {
+    hours += 24; // 0→24, 1→25, ..., 4→28
+  }
+
+  const hourString = hours.toString().padStart(2, '0');
+  document.getElementById('exitTime').value = `${hourString}:${minutes}`;
+}
 
     const customerOptions = {
       maleNew: { setTime: 40, drinkTime: '40分' },
