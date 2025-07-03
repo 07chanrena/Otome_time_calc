@@ -150,9 +150,9 @@
         output += `<span class="green">🟢 セット内で完結しています。延長は不要です。</span>`;
       } else {
         output += `
-          🔁 現在までの延長回数：${count}回<br>
-          ⏱️ 延長分数：${extra}分<br>
-          🕑 現在の延長終了時刻：${minutesToTime(nowEnd)}<br>
+          🔁 時間経過済み延長回数：${count}回<br>
+          ⏱️ 延長適用分数：${extra}分<br>
+          🕑 現在のセットの終了時刻：${minutesToTime(nowEnd)}<br>
           ➕ 延長を1追加した場合：${minutesToTime(nextEnd)}<br>
         `;
       }
