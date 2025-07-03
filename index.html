@@ -136,7 +136,7 @@
       const unit = 20; // 乙女ハウスの延長単位は20分
       const totalStay = exit - entry;
       const extra = Math.max(0, totalStay - setTime);
-      const count = (extra <= 0) ? 0 : Math.ceil(extra / unit);
+      const count = (extra <= 0) ? 0 : Math.floor(extra / unit);
 
       const nowEnd = entry + setTime + count * unit;
       const nextEnd = nowEnd + unit;
