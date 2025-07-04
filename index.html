@@ -161,9 +161,12 @@ function setDefaultExitTime() {
         output += `<span class="green">🟢 セット内で完結しています。延長は不要です。</span>`;
       } else {
         output += `
-          🔁 消化済みチャージ：${count}回<br>
           ⏱️ 滞在時間-飲み放題分数：${extra}分<br>
-//          🕑 現在のセットの終了時刻：${minutesToTime(nowEnd)}<br>
+          
+          🔁 消化済みチャージ：${count}回<br>
+          🕑 現在のセットの終了時刻：${minutesToTime(nowEnd)}<br>
+
+          🔁 消化済みチャージ：${count+1}回<br>
           ➕ 次のセットの終了時刻：${minutesToTime(nextEnd)}<br>
         `;
       }
