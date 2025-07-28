@@ -16,6 +16,16 @@
     h2 {
       color: #d63384;
       text-align: center;
+      position: relative;
+    }
+    .auto-convert-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
     label, select, input, button {
       display: block;
@@ -55,11 +65,12 @@
   </style>
 </head>
 <body>
-  <h2>乙女ハウス 延長計算アプリ</h2>
+  <div class="auto-convert-toggle">
+    <input type="checkbox" id="autoConvert" checked>
+    <label for="autoConvert">時刻自動変換機能</label>
+  </div>
 
-  <label>
-    <input type="checkbox" id="autoConvert" checked> 時刻自動変換機能
-  </label>
+  <h2>乙女ハウス 延長計算アプリ</h2>
 
   <label>顧客種別</label>
   <select id="customer">
@@ -109,18 +120,16 @@
     function parseFlexibleTime(str, autoConvert = true) {
       str = str.trim().replace(/[：]/g, ":");
       if (!str.includes(":")) str = normalizeTimeInput(str);
-
       const [h, m] = str.split(":").map(Number);
       if (isNaN(h) || isNaN(m) || m > 59) return null;
-
       const total = h * 60 + m;
       if (!autoConvert) return total;
 
-      const timeSlot = getCurrentTimeSlot();
-      if (h >= 24) return total; // 24時以降はそのまま
+      const slot = getCurrentTimeSlot();
+      if (h >= 24) return total;
       if (h >= 12) return total;
-      if (total < 360) return (timeSlot === 'midnight') ? total + 1440 : 14 * 60;
-      if (total < 720) return (timeSlot === 'evening' || timeSlot === 'midnight') ? total + 720 : total;
+      if (total < 360) return (slot === 'midnight') ? total + 1440 : 14 * 60;
+      if (total < 720) return (slot === 'evening' || slot === 'midnight') ? total + 720 : total;
       return total;
     }
 
@@ -139,7 +148,6 @@
     function calculate() {
       const customer = document.getElementById('customer').value;
       const autoConvert = document.getElementById('autoConvert').checked;
-
       let rawEntry = document.getElementById('entryTime').value;
       let rawExit = document.getElementById('exitTime').value;
 
@@ -172,7 +180,7 @@
       }
 
       const setTime = customerOptions[customer].setTime;
-      const unit = 20; // 乙女ハウスは20分単位
+      const unit = 20;
       const totalStay = exit - entry;
       const chargeable = Math.max(0, totalStay - setTime);
       const count = Math.floor(chargeable / unit);
@@ -199,3 +207,4 @@
   </script>
 </body>
 </html>
+
