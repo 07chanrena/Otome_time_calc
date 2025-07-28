@@ -3,120 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <title>乙女ハウス 延長計算アプリ</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap');
-
-  body {
-    font-family: 'Sawarabi Mincho', sans-serif;
-    background-color: #fff0f5;
-    padding: 20px;
-    max-width: 480px;
-    margin: auto;
-  }
-
-  h2 {
-    color: #d63384;
-    text-align: center;
-  }
-
-  label, select, input, button {
-    display: block;
-    width: 100%;
-    margin-bottom: 12px;
-    font-size: 18px;
-  }
-
-  input, select {
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-
-  button {
-    background-color: #ff69b4;
-    color: white;
-    border: none;
-    padding: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 6px;
-  }
-
-  .output {
-    margin-top: 20px;
-    font-size: 18px;
-    padding: 12px;
-    background-color: #fff;
-    border: 2px dashed #ff69b4;
-    border-radius: 8px;
-    color: #333;
-  }
-
-  .error {
-    color: red;
-  }
-
-  .green {
-    color: green;
-  }
-</style>
-
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sawarabi+Mincho&display=swap');
+    body {
+      font-family: 'Sawarabi Mincho', sans-serif;
+      background-color: #fff0f5;
+      padding: 20px;
+      max-width: 480px;
+      margin: auto;
+    }
+    h2 {
+      color: #d63384;
+      text-align: center;
+    }
+    label, select, input, button {
+      display: block;
+      width: 100%;
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+    input, select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #ff69b4;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .output {
+      margin-top: 20px;
+      font-size: 18px;
+      padding: 12px;
+      background-color: #fff;
+      border: 2px dashed #ff69b4;
+      border-radius: 8px;
+      color: #333;
+    }
+    .error {
+      color: red;
+    }
+    .green {
+      color: green;
+    }
+  </style>
 </head>
 <body>
   <h2>乙女ハウス 延長計算アプリ</h2>
 
+  <label>
+    <input type="checkbox" id="autoConvert" checked> 時刻自動変換機能
+  </label>
+
   <label>顧客種別</label>
   <select id="customer">
-<option value="maleRegular">男性既存</option>
-<option value="maleNew">男性新規（飲み放題40分）</option>
-<option value="femaleRegular">女性既存</option>
-<option value="femaleNew">女性新規（飲み放題40分）</option>
+    <option value="maleRegular">男性既存</option>
+    <option value="maleNew">男性新規（飲み放題40分）</option>
+    <option value="femaleRegular">女性既存</option>
+    <option value="femaleNew">女性新規（飲み放題40分）</option>
+    <option value="revisit">同日再来店</option>
   </select>
 
-  <label>入場時間（例: 19:00 または 25:30）</label>
-  <input type="text" id="entryTime" value="19:00">
+  <label>入場時間（例: 930, 25:30など）</label>
+  <input type="text" id="entryTime" placeholder="例: 930, 25:30">
 
   <label>退店希望時間</label>
-  <input type="text" id="exitTime">
+  <input type="text" id="exitTime" placeholder="例: 1100, 27:00">
 
   <button onclick="calculate()">算出する</button>
 
   <div class="output" id="result"></div>
 
-
-  <input type="text" id="exitTime">
   <script>
-
-    // 現在時刻を退店希望時刻にセットする
-function setDefaultExitTime() {
-  const now = new Date();
-  let hours = now.getHours();
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-
-  // 0時〜6時台 → 24時〜30時台に変換
-  if (hours >= 0 && hours < 7) {
-    hours += 24; // 0 → 24, 1 → 25, ..., 6 → 30
-  }
-
-  const hourString = hours.toString().padStart(2, '0');
-  document.getElementById('exitTime').value = `${hourString}:${minutes}`;
-}
-
-
     const customerOptions = {
       maleNew: { setTime: 40, drinkTime: '40分' },
       femaleNew: { setTime: 40, drinkTime: '40分' },
       maleRegular: { setTime: 0, drinkTime: 'なし' },
-      femaleRegular: { setTime: 0, drinkTime: 'なし' }
+      femaleRegular: { setTime: 0, drinkTime: 'なし' },
+      revisit: { setTime: 0, drinkTime: 'なし' }
     };
 
-    function timeToMinutes(str) {
+    function normalizeTimeInput(raw) {
+      if (/^\d{3,4}$/.test(raw)) {
+        const h = raw.length === 3 ? raw.charAt(0) : raw.slice(0, 2);
+        const m = raw.slice(-2);
+        return `${h}:${m}`;
+      }
+      return raw;
+    }
+
+    function getCurrentTimeSlot() {
+      const hour = new Date().getHours();
+      if (hour >= 0 && hour < 6) return 'midnight';
+      if (hour >= 6 && hour < 12) return 'morning';
+      if (hour >= 12 && hour < 18) return 'day';
+      return 'evening';
+    }
+
+    function parseFlexibleTime(str, autoConvert = true) {
+      str = str.trim().replace(/[：]/g, ":");
+      if (!str.includes(":")) str = normalizeTimeInput(str);
+
       const [h, m] = str.split(":").map(Number);
-      return h * 60 + m;
+      if (isNaN(h) || isNaN(m) || m > 59) return null;
+
+      const total = h * 60 + m;
+      if (!autoConvert) return total;
+
+      const timeSlot = getCurrentTimeSlot();
+      if (h >= 24) return total; // 24時以降はそのまま
+      if (h >= 12) return total;
+      if (total < 360) return (timeSlot === 'midnight') ? total + 1440 : 14 * 60;
+      if (total < 720) return (timeSlot === 'evening' || timeSlot === 'midnight') ? total + 720 : total;
+      return total;
     }
 
     function minutesToTime(min) {
-      const h = Math.floor(min / 60) % 24;
+      const h = Math.floor(min / 60);
       const m = min % 60;
       return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
     }
@@ -129,53 +137,64 @@ function setDefaultExitTime() {
 
     function calculate() {
       const customer = document.getElementById('customer').value;
-      const entry = timeToMinutes(document.getElementById('entryTime').value);
-      const exit = timeToMinutes(document.getElementById('exitTime').value);
+      const autoConvert = document.getElementById('autoConvert').checked;
+
+      let rawEntry = document.getElementById('entryTime').value;
+      let rawExit = document.getElementById('exitTime').value;
+
+      if (!autoConvert) {
+        rawEntry = normalizeTimeInput(rawEntry);
+        rawExit = normalizeTimeInput(rawExit);
+        document.getElementById('entryTime').value = rawEntry;
+        document.getElementById('exitTime').value = rawExit;
+      }
+
+      const entry = parseFlexibleTime(rawEntry, autoConvert);
+      const exit = parseFlexibleTime(rawExit, autoConvert);
+
+      if (autoConvert) {
+        if (entry !== null) document.getElementById('entryTime').value = minutesToTime(entry);
+        if (exit !== null) document.getElementById('exitTime').value = minutesToTime(exit);
+      }
+
       const result = document.getElementById('result');
       result.innerHTML = "";
 
-      if (!customer || entry === null || exit === null) {
-        result.innerHTML = "<span class='error'>入力をすべて正しく指定してください。</span>";
+      if (entry === null || exit === null) {
+        result.innerHTML = "<span class='error'>⚠️ 入力値が不正です。</span>";
         return;
       }
+
       if (exit <= entry) {
-        result.innerHTML = "<span class='error'>退店希望時間は入場時間より後にしてください。</span>";
+        result.innerHTML = "<span class='error'>⚠️ 入場時間が退店希望時間よりも後になっています。</span>";
         return;
       }
 
       const setTime = customerOptions[customer].setTime;
-      const unit = 20; // 乙女ハウスの延長単位は20分
+      const unit = 20; // 乙女ハウスは20分単位
       const totalStay = exit - entry;
-      const extra = Math.max(0, totalStay - setTime);
-      const count = (extra <= 0) ? 0 : Math.floor(extra / unit);
-
+      const chargeable = Math.max(0, totalStay - setTime);
+      const count = Math.floor(chargeable / unit);
       const nowEnd = entry + setTime + count * unit;
       const nextEnd = nowEnd + unit;
 
       let output = `
-        ✅ 現在までの滞在時間：${formatTimeDuration(totalStay)}<br>
-        🍹 飲み放題の時間：${customerOptions[customer].drinkTime}<br><br>
+        ✅ 滞在時間：${formatTimeDuration(totalStay)}<br>
+        🍹 飲み放題時間：${customerOptions[customer].drinkTime}<br><br>
       `;
 
-      if (count === 0) {
-        output += `<span class="green">🟢 セット内で完結しています。延長は不要です。</span>`;
-      } else {
-        output += `
-          ⏱️ 滞在時間-飲み放題分数：${extra}分<br>
-          <br>
-          🔁 消化済みチャージ：${count}回<br>
-          🕑 現在のセットの終了時刻：${minutesToTime(nowEnd)}<br>
-<br>
-          🔁 チャージを1回追加した場合：${count+1}回<br>
-          🕑 次のセットの終了時刻：${minutesToTime(nextEnd)}<br>
-        `;
+      if (customer === "revisit") {
+        output += `<span class="green">🟢 同日再来店のため、セット料金は適用されません。</span><br><br>`;
       }
+
+      output += `
+        🔁 消化済み延長回数：${count}回<br>
+        🕑 現在の終了時刻：${minutesToTime(nowEnd)}<br>
+        ➕ 1回延長すると：${minutesToTime(nextEnd)}<br>
+      `;
 
       result.innerHTML = output;
     }
-
-    // ページロード時に退店希望時間をセット
-    window.onload = setDefaultExitTime;
   </script>
 </body>
 </html>
